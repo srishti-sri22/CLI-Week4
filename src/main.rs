@@ -1,15 +1,13 @@
 use clap::Parser;
-use flate2::Compression;
-use flate2::write::GzEncoder;
-use flate2::read::GzDecoder;
-use std::fs::{self, File};
-use std::io::{self, Read, Write};
-use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
-use std::thread;
+use std::fs::{self};
+use std::io::{self};
 mod models;
-use models::{Args, CompressionResult, DecompressionResult};
-
+use std::path::{PathBuf};
+use models::{Args};
+mod compress;
+mod decompress;
+use compress::{ compress_files_parallel};
+use decompress::{decompress_files_parallel};
 
 fn main() {
     let args = Args::parse();
@@ -83,7 +81,6 @@ fn main() {
     println!("Total original size: {} bytes", total_original);
     println!("Total compressed size: {} bytes", total_compressed);
     println!("Overall compression: {:.2}%", overall_ratio);
-    println!("Compressed files location: {}", compressed_dir);
 
     println!("\n\n Starting Decompression \n");
 
@@ -182,173 +179,8 @@ fn collect_compressed_files(dir: &str) -> io::Result<Vec<PathBuf>> {
     Ok(files)
 }
 
-fn compress_files_parallel(
-    files: Vec<PathBuf>,
-    output_dir: &str,
-    num_threads: usize,
-    compression_level: u32,
-) -> Vec<CompressionResult> {
-    let results = Arc::new(Mutex::new(Vec::new()));
-    let files = Arc::new(files);
-    let output_dir = Arc::new(output_dir.to_string());
 
-    let chunk_size = (files.len() + num_threads - 1) / num_threads;
-    let mut handles = vec![];
 
-    for thread_id in 0..num_threads {
-        let files = Arc::clone(&files);
-        let results = Arc::clone(&results);
-        let output_dir = Arc::clone(&output_dir);
 
-        let handle = thread::spawn(move || {
-            let start = thread_id * chunk_size;
-            let end = ((thread_id + 1) * chunk_size).min(files.len());
 
-            for i in start..end {
-                let file_path = &files[i];
-                println!("Thread {}: Compressing {:?}", thread_id, file_path.file_name().unwrap());
 
-                match compress_file(file_path, &output_dir, compression_level) {
-                    Ok(result) => {
-                        let mut results = results.lock().unwrap();
-                        results.push(result);
-                    }
-                    Err(e) => {
-                        eprintln!("Error compressing {:?}: {}", file_path, e);
-                    }
-                }
-            }
-        });
-
-        handles.push(handle);
-    }
-
-    for handle in handles {
-        handle.join().expect("Thread panicked");
-    }
-
-    Arc::try_unwrap(results)
-        .expect("Arc still has multiple owners")
-        .into_inner()
-        .unwrap()
-}
-
-fn decompress_files_parallel(
-    files: Vec<PathBuf>,
-    output_dir: &str,
-    num_threads: usize,
-) -> Vec<DecompressionResult> {
-    let results = Arc::new(Mutex::new(Vec::new()));
-    let files = Arc::new(files);
-    let output_dir = Arc::new(output_dir.to_string());
-
-    let chunk_size = (files.len() + num_threads - 1) / num_threads;
-    let mut handles = vec![];
-
-    for thread_id in 0..num_threads {
-        let files = Arc::clone(&files);
-        let results = Arc::clone(&results);
-        let output_dir = Arc::clone(&output_dir);
-
-        let handle = thread::spawn(move || {
-            let start = thread_id * chunk_size;
-            let end = ((thread_id + 1) * chunk_size).min(files.len());
-
-            for i in start..end {
-                let file_path = &files[i];
-                println!("Thread {}: Decompressing {:?}", thread_id, file_path.file_name().unwrap());
-
-                match decompress_file(file_path, &output_dir) {
-                    Ok(result) => {
-                        let mut results = results.lock().unwrap();
-                        results.push(result);
-                    }
-                    Err(e) => {
-                        eprintln!("Error decompressing {:?}: {}", file_path, e);
-                        let mut results = results.lock().unwrap();
-                        results.push(DecompressionResult {
-                            filename: file_path.file_name().unwrap().to_string_lossy().to_string(),
-                            compressed_size: 0,
-                            decompressed_size: 0,
-                            success: false,
-                        });
-                    }
-                }
-            }
-        });
-
-        handles.push(handle);
-    }
-
-    for handle in handles {
-        handle.join().expect("Thread panicked");
-    }
-
-    Arc::try_unwrap(results)
-        .expect("Arc still has multiple owners")
-        .into_inner()
-        .unwrap()
-}
-
-fn compress_file(
-    input_path: &Path,
-    output_dir: &str,
-    compression_level: u32,
-) -> io::Result<CompressionResult> {
-    let mut input_file = File::open(input_path)?;
-    let mut buffer = Vec::new();
-    input_file.read_to_end(&mut buffer)?;
-    let original_size = buffer.len() as u64;
-
-    let filename = input_path.file_name().unwrap().to_string_lossy();
-    let output_filename = format!("{}.gz", filename);
-    let output_path = Path::new(output_dir).join(&output_filename);
-
-    let output_file = File::create(&output_path)?;
-    let mut encoder = GzEncoder::new(output_file, Compression::new(compression_level));
-    encoder.write_all(&buffer)?;
-    encoder.finish()?;
-
-    let compressed_size = fs::metadata(&output_path)?.len();
-
-    let compression_ratio = if original_size > 0 {
-        ((original_size - compressed_size) as f64 / original_size as f64) * 100.0
-    } else {
-        0.0
-    };
-
-    Ok(CompressionResult {
-        filename: filename.to_string(),
-        original_size,
-        compressed_size,
-        compression_ratio,
-    })
-}
-
-fn decompress_file(
-    input_path: &Path,
-    output_dir: &str,
-) -> io::Result<DecompressionResult> {
-    let input_file = File::open(input_path)?;
-    let compressed_size = input_file.metadata()?.len();
-    
-    let mut decoder = GzDecoder::new(input_file);
-    let mut buffer = Vec::new();
-    decoder.read_to_end(&mut buffer)?;
-    
-    let decompressed_size = buffer.len() as u64;
-
-    let filename = input_path.file_name().unwrap().to_string_lossy();
-    let output_filename = filename.trim_end_matches(".gz");
-    let output_path = Path::new(output_dir).join(output_filename);
-
-    let mut output_file = File::create(&output_path)?;
-    output_file.write_all(&buffer)?;
-
-    Ok(DecompressionResult {
-        filename: filename.to_string(),
-        compressed_size,
-        decompressed_size,
-        success: true,
-    })
-}

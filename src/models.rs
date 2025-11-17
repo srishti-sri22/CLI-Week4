@@ -26,3 +26,11 @@ pub struct CompressionResult {
     pub compressed_size: u64,
     pub compression_ratio: f64,
 }
+
+#[derive(Debug)]
+pub struct DecompressionResult {
+    pub filename: String,
+    pub compressed_size: u64,
+    pub decompressed_size: u64,
+    pub success: bool,
+}

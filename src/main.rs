@@ -8,9 +8,6 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 
 #[derive(Parser, Debug)]
-#[command(name = "File Compressor")]
-#[command(version = "1.0")]
-#[command(about = "Compress multiple files in parallel")]
 struct Args {
     
     #[arg(short, long)]
@@ -78,8 +75,8 @@ fn main() {
 
     
     println!("\n=== Compression Results ===\n");
-    let mut total_original = 0u64;
-    let mut total_compressed = 0u64;
+    let mut total_original = 0;
+    let mut total_compressed = 0;
 
     for result in &results {
         println!("File: {}", result.filename);
@@ -97,7 +94,7 @@ fn main() {
         0.0
     };
 
-    println!("=== Summary ===");
+    println!("Summary");
     println!("Files compressed: {}", results.len());
     println!("Total original size: {} bytes", total_original);
     println!("Total compressed size: {} bytes", total_compressed);
@@ -125,7 +122,6 @@ fn collect_files(dir: &str) -> io::Result<Vec<PathBuf>> {
         let path = entry.path();
 
         if path.is_file() {
-            // Skip already compressed files
             if let Some(ext) = path.extension() {
                 if ext == "gz" {
                     continue;
@@ -194,24 +190,20 @@ fn compress_file(
     output_dir: &str,
     compression_level: u32,
 ) -> io::Result<CompressionResult> {
-    // Read input file
     let mut input_file = File::open(input_path)?;
     let mut buffer = Vec::new();
     input_file.read_to_end(&mut buffer)?;
     let original_size = buffer.len() as u64;
 
-    // Create output file path
     let filename = input_path.file_name().unwrap().to_string_lossy();
     let output_filename = format!("{}.gz", filename);
     let output_path = Path::new(output_dir).join(&output_filename);
 
-    // Compress and write
-    let output_file = File::create(&output_path)?;
+    let output_file = File::create(&output_path).expect("failed to create the output compresed file");
     let mut encoder = GzEncoder::new(output_file, Compression::new(compression_level));
     encoder.write_all(&buffer)?;
     encoder.finish()?;
 
-    // Get compressed size
     let compressed_size = fs::metadata(&output_path)?.len();
 
     let compression_ratio = if original_size > 0 {

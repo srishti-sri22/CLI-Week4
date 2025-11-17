@@ -6,33 +6,9 @@ use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::thread;
+mod models;
+use models::{Args, CompressionResult};
 
-#[derive(Parser, Debug)]
-struct Args {
-    
-    #[arg(short, long)]
-    input: String,
-
-    
-    #[arg(short, long)]
-    output: String,
-
-    
-    #[arg(short, long, default_value_t = 4)]
-    threads: usize,
-
-    
-    #[arg(short, long, default_value_t = 6)]
-    level: u32,
-}
-
-#[derive(Debug, Clone)]
-struct CompressionResult {
-    filename: String,
-    original_size: u64,
-    compressed_size: u64,
-    compression_ratio: f64,
-}
 
 fn main() {
     let args = Args::parse();

@@ -44,7 +44,7 @@ pub fn decompress_files_parallel(
     let files = Arc::new(files);
     let output_dir = Arc::new(output_dir.to_string());
 
-    let chunk_size = (files.len() + num_threads - 1) / num_threads;
+    let chunk_size = (files.len() + num_threads - 1) / num_threads; 
     let mut handles = vec![];
 
     for thread_id in 0..num_threads {

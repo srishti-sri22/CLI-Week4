@@ -12,19 +12,19 @@ use std::thread;
 #[command(version = "1.0")]
 #[command(about = "Compress multiple files in parallel")]
 struct Args {
-    /// Directory containing files to compress
+    
     #[arg(short, long)]
     input: String,
 
-    /// Output directory for compressed files
+    
     #[arg(short, long)]
     output: String,
 
-    /// Number of threads to use
+    
     #[arg(short, long, default_value_t = 4)]
     threads: usize,
 
-    /// Compression level (0-9, higher = better compression)
+    
     #[arg(short, long, default_value_t = 6)]
     level: u32,
 }
@@ -40,7 +40,6 @@ struct CompressionResult {
 fn main() {
     let args = Args::parse();
 
-    // Validate compression level
     if args.level > 9 {
         eprintln!("Error: Compression level must be between 0 and 9");
         std::process::exit(1);
@@ -52,13 +51,13 @@ fn main() {
     println!("Threads: {}", args.threads);
     println!("Compression level: {}\n", args.level);
 
-    // Create output directory if it doesn't exist
+    
     if let Err(e) = fs::create_dir_all(&args.output) {
         eprintln!("Error creating output directory: {}", e);
         std::process::exit(1);
     }
 
-    // Collect files to compress
+    
     let files = match collect_files(&args.input) {
         Ok(files) => files,
         Err(e) => {
@@ -74,10 +73,10 @@ fn main() {
 
     println!("Found {} files to compress\n", files.len());
 
-    // Compress files in parallel
+    
     let results = compress_files_parallel(files, &args.output, args.threads, args.level);
 
-    // Display results
+    
     println!("\n=== Compression Results ===\n");
     let mut total_original = 0u64;
     let mut total_compressed = 0u64;

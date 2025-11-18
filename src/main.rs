@@ -6,7 +6,7 @@ use std::path::{PathBuf};
 use models::{Args};
 mod compress;
 mod decompress;
-use compress::{ compress_files_parallel};
+use compress::{compress_files_parallel};
 use decompress::{decompress_files_parallel};
 
 fn main() {

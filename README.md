@@ -1,6 +1,6 @@
 Commands to run in the CLI:
 
- Compress all files from input folder to output folder
+* Compress all files from input folder to output folder
 cargo run -- --input ./files --output ./compressed
 
 * Short form

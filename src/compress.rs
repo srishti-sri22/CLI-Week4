@@ -29,7 +29,7 @@ pub fn compress_file(
 
     let compressed_size = fs::metadata(&output_path)?.len();
 
-    let compression_ratio = if original_size > 0 {
+    let compression_ratio = if original_size > 0 && original_size>compressed_size {
         ((original_size - compressed_size) as f64 / original_size as f64) * 100.0
     } else {
         0.0
@@ -92,4 +92,28 @@ pub fn compress_files_parallel(
         .expect("Arc still has multiple owners")
         .into_inner()
         .unwrap()
+}
+
+
+
+#[cfg(test)]
+mod tests{
+    use super::*;
+    use std::{io::Write};
+
+    #[test]
+    fn test_compress_file(){
+        let input = "test.input.txt";
+        let mut f = File::create(input).unwrap();
+        writeln!(f,"hello world welcome to the new world").unwrap();
+
+        let output = "test_output";
+        std::fs::create_dir_all(output).unwrap();
+
+        let _result = compress_file(Path::new(input), output, 6).unwrap();
+
+        let expected_ans = format!("{}/test.input.txt.gz", output);
+        assert!(Path::new(&expected_ans).exists());
+
+    }
 }

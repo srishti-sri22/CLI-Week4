@@ -14,8 +14,8 @@ pub fn compress_file(
     compression_level: u32,
 ) -> io::Result<CompressionResult> {
 
-    let buffer = fs::read(input_path)?;
-    let original_size = buffer.len() as u64;
+    let buffer = fs::read(input_path).expect("Incorrect buffer read");
+    let original_size = buffer.len()  as u64;
 
     let filename = input_path
         .file_name()
@@ -92,7 +92,6 @@ pub fn compress_files_parallel(
         .into_inner()
         .unwrap()
 }
-
 
 #[cfg(test)]
 mod tests{

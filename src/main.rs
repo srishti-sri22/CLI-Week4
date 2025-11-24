@@ -6,8 +6,9 @@ use std::path::{PathBuf};
 use models::{Args};
 mod compress;
 mod decompress;
+mod decompress_rayon;
 use compress::{compress_files_parallel};
-use decompress::{decompress_files_parallel};
+use decompress_rayon::{decompress_files_parallel};
 
 fn main() {
     let args = Args::parse();
@@ -56,7 +57,7 @@ fn main() {
     let results = compress_files_parallel(files, &compressed_dir, args.threads, args.level);
 
     
-    println!("\n=== Compression Results ===\n");
+    println!(" Compression Results");
     let mut total_original = 0;
     let mut total_compressed = 0;
 
@@ -102,10 +103,9 @@ fn main() {
     let decompress_results = decompress_files_parallel(
         compressed_files,
         &decompressed_dir,
-        args.threads,
     );
 
-    println!("\n=== Decompression Results ===\n");
+    println!("Decompression Results ");
     for result in &decompress_results {
         println!("File: {}", result.filename);
         println!("  Compressed size: {} bytes", result.compressed_size);
@@ -136,7 +136,7 @@ fn collect_files(dir: &str) -> io::Result<Vec<PathBuf>> {
     }
 
     for entry in fs::read_dir(path)? {
-        let entry = entry?;
+        let entry = entry.expect("The file entry does not exist");
         let path = entry.path();
 
         if path.is_file() {

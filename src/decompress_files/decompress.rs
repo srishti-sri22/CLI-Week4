@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use crate::models::DecompressionResult;
 
 pub fn decompress_file(
-    input_path: &Path,
+    input_path: &PathBuf,
     output_dir: &str,
 ) -> io::Result<DecompressionResult> {
     let input_file = File::open(input_path)?;
@@ -25,7 +25,7 @@ pub fn decompress_file(
     let output_path = Path::new(output_dir).join(output_filename);
 
     let mut output_file = File::create(&output_path)?;
-    output_file.write_all(&buffer)?;
+    output_file.write_all(&buffer).expect("Failed to write in the output file");
 
     Ok(DecompressionResult {
         filename: filename.to_string(),
@@ -34,6 +34,8 @@ pub fn decompress_file(
         success: true,
     })
 }
+
+
 
 // pub fn decompress_files_parallel(
 //     files: Vec<PathBuf>,

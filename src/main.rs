@@ -1,14 +1,16 @@
+use std::fs;
 use clap::Parser;
-use std::fs::{self};
-use std::io::{self};
 mod models;
-use std::path::{PathBuf};
 use models::{Args};
 mod compress;
-mod decompress;
-mod decompress_rayon;
-use compress::{compress_files_parallel};
-use decompress_rayon::{decompress_files_parallel};
+use compress::compress::compress_files_parallel;
+
+mod decompress_files;
+use decompress_files::decompress_rayon::decompress_files_parallel;
+
+mod utils;
+use utils::collect_compressed_files::collect_compressed_files;
+use utils::collect_files::collect_files;
 
 fn main() {
     let args = Args::parse();
@@ -118,69 +120,5 @@ fn main() {
     println!("Decompressed files location: {}", decompressed_dir);
     
 }
-
-fn collect_files(dir: &str) -> io::Result<Vec<PathBuf>> {
-    let mut files = Vec::new();
-    let path = PathBuf::from(dir);
-
-    if !path.exists() {
-        return Err(io::Error::new(
-            io::ErrorKind::NotFound,
-            format!("Directory '{}' not found", dir),
-        ));
-    }
-
-    if path.is_file() {
-        files.push(path);
-        return Ok(files);
-    }
-
-    for entry in fs::read_dir(path)? {
-        let entry = entry.expect("The file entry does not exist");
-        let path = entry.path();
-
-        if path.is_file() {
-            if let Some(ext) = path.extension() {
-                if ext == "gz" {
-                    continue;
-                }
-            }
-            files.push(path);
-        }
-    }
-
-    Ok(files)
-}
-
-fn collect_compressed_files(dir: &str) -> io::Result<Vec<PathBuf>> {
-    let mut files = Vec::new();
-    let path = PathBuf::from(dir);
-
-    if !path.exists() {
-        return Err(io::Error::new(
-            io::ErrorKind::NotFound,
-            format!("Directory '{}' not found", dir),
-        ));
-    }
-
-    for entry in fs::read_dir(path)? {
-        let entry = entry?;
-        let path = entry.path();
-
-        if path.is_file() {
-            if let Some(ext) = path.extension() {
-                if ext == "gz" {
-                    files.push(path);
-                }
-            }
-        }
-    }
-
-    Ok(files)
-}
-
-
-
-
 
 

@@ -1,8 +1,8 @@
 use rayon::prelude::*;
 use std::path::PathBuf;
 
-use crate::{decompress::decompress_file, models::DecompressionResult};
-
+use crate::models::{DecompressionResult};
+use crate::decompress_files::decompress::decompress_file;
 pub fn decompress_files_parallel(
     files: Vec<PathBuf>,
     output_dir: &str,
@@ -26,3 +26,4 @@ pub fn decompress_files_parallel(
         })
         .collect()
 }
+

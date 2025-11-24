@@ -27,7 +27,7 @@ pub fn compress_file(
     let output_file = File::create(&output_path)?;
     let mut encoder = GzEncoder::new(output_file, Compression::new(compression_level));
     encoder.write_all(&buffer)?;
-    encoder.finish()?;
+    encoder.finish().expect("The encoder stream did not finish");
 
     let compressed_size = fs::metadata(&output_path)?.len();
 

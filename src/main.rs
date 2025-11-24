@@ -3,7 +3,7 @@ use clap::Parser;
 mod models;
 use models::{Args};
 mod compress;
-use compress::compress::compress_files_parallel;
+
 
 mod decompress_files;
 use decompress_files::decompress_rayon::decompress_files_parallel;
@@ -11,6 +11,8 @@ use decompress_files::decompress_rayon::decompress_files_parallel;
 mod utils;
 use utils::collect_compressed_files::collect_compressed_files;
 use utils::collect_files::collect_files;
+
+use crate::compress::compress_files_parallel::compress_files_parallel;
 
 fn main() {
     let args = Args::parse();
